@@ -1,0 +1,9 @@
+streamlit
+langchain==0.3.25
+langchain-core==0.3.86
+langchain-groq==0.2.4
+langchain-text-splitters==0.3.11
+langchain-community==0.3.24
+youtube-transcript-api
+python-dotenv
+transformers
