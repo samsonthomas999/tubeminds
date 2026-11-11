@@ -35,7 +35,7 @@ def summarize_transcript(transcript: str) -> str:
     docs = [Document(page_content=chunk) for chunk in chunks]
 
     llm = ChatGroq(
-        model = "llama-3.3-70b-versatile",
+        model = "openai/gpt-oss-20b",
         api_key = os.getenv("GROQ_API_KEY"),
         temperature = 0.3
     )
