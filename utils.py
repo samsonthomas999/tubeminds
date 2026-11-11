@@ -1,8 +1,6 @@
 from youtube_transcript_api import YouTubeTranscriptApi
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_groq import ChatGroq
-from langchain.chains.summarize import load_summarize_chain
-from langchain_core.documents import Document
 from dotenv import load_dotenv
 import os
 import re
@@ -20,7 +18,7 @@ def extract_video_id(url: str) -> str:
             return match.group(1)
     return None
 
-def get_transcript(video_id:str) -> str:
+def get_transcript(video_id: str) -> str:
     ytt = YouTubeTranscriptApi()
     transcript_list = ytt.fetch(video_id)
     full_text = " ".join([item.text for item in transcript_list])
@@ -28,18 +26,28 @@ def get_transcript(video_id:str) -> str:
 
 def summarize_transcript(transcript: str) -> str:
     splitter = RecursiveCharacterTextSplitter(
-        chunk_size = 3000,
-        chunk_overlap = 200
+        chunk_size=3000,
+        chunk_overlap=200
     )
     chunks = splitter.split_text(transcript)
-    docs = [Document(page_content=chunk) for chunk in chunks]
 
     llm = ChatGroq(
-        model = "openai/gpt-oss-20b",
-        api_key = os.getenv("GROQ_API_KEY"),
-        temperature = 0.3
+        model="openai/gpt-oss-20b",
+        api_key=os.getenv("GROQ_API_KEY"),
+        temperature=0.3
     )
 
-    chain = load_summarize_chain(llm, chain_type="map_reduce")
-    result = chain.invoke(docs)
-    return result["output_text"]
+    # MAP: summarize each chunk separately
+    partial_summaries = []
+    for chunk in chunks:
+        response = llm.invoke(
+            f"Summarize this part of a video transcript in a few sentences:\n\n{chunk}"
+        )
+        partial_summaries.append(response.content)
+
+    # REDUCE: combine all partial summaries into one final summary
+    combined = "\n".join(partial_summaries)
+    final = llm.invoke(
+        f"Combine these partial summaries into one clear final summary:\n\n{combined}"
+    )
+    return final.content
